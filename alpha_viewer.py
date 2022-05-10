@@ -10,6 +10,32 @@ from ipywidgets import GridspecLayout
 from ipywidgets import Output
 
 
+
+
+aa_dict = {0:["Alanine","Ala","A"],
+           1:["Arginine","Arg","R"],
+           2:["Asparagine","Asn","N"],
+           3:["Aspartic acid","Asp","D"],
+           4:["Cysteine","Cys","C"],
+           5:["Glutamic acid","Glu","E"],
+           6:["Glutamine","Gln","Q"],
+           7:["Glycine","Gly","G"],
+           8:["Histidine","His","H"],
+           9:["Isoleucine","Ile","I"],
+           10:["Leucine","Leu","L"],
+           11:["Lysine","Lys","K"],
+           12:["Methionine","Met","M"],
+           13:["Phenylalanine","Phe","F"],
+           14:["Proline","Pro","P"],
+           15:["Serine","Ser","S"],
+           16:["Threonine","Thr","T"],
+           17:["Tryptophan","Trp","W"],
+           18:["Tyrosine","Tyr","Y"],
+           19:["Valine","Val","V"]}
+
+def translate_numbers_to_one_letter(sequence):
+    return [aa_dict[x][2] for x in sequence]
+              
 def plot_plddt_legend(thresh, colors, title = None):
     plt.figure(figsize=(2, 2))
     for c in colors:
@@ -46,7 +72,11 @@ class alpha_viewer:
         with open(f'{self.path}/ranking_debug.json', 'r') as j:
             ranking_data = json.load(j)
         self.best_model = ranking_data['order'][0]
-    
+        if "multimer" in self.best_model:
+              self.type = "multimer"
+        else:
+              self.type = "monomer"
+                
     def get_meta_data(self):
         with open(f'{self.path}/result_{self.best_model}.pkl', 'rb') as f:
             self.meta_data = pickle.load(f)
@@ -55,9 +85,15 @@ class alpha_viewer:
     def get_feature_data(self):
         with open(f'{self.path}/features.pkl', 'rb') as f:
             self.feature_data = pickle.load(f)
-        seq = self.feature_data["sequence"][0].decode("utf8")
-        self.obs = pd.DataFrame({"aa":[x for x in seq]})
-
+        if self.type == "monomer":    
+            seq = self.feature_data["sequence"][0].decode("utf8")
+            self.obs = pd.DataFrame({"aa":[x for x in seq]})
+        else:
+            seq = self.feature_data["aatype"]
+            self.obs = pd.DataFrame({"aa":translate_numbers_to_one_letter(seq),
+                                     "chain": self.feature_data["asym_id"].astype(int),
+                                     "chain_postion":self.feature_data["residue_index"].astype(int)})
+            
     def get_pdb(self):
         with open(f"{self.path}/relaxed_{self.best_model}.pdb") as ifile:
             self.pdb = "".join([x for x in ifile])
@@ -138,14 +174,19 @@ class alpha_viewer:
         for idx, i in enumerate(thresh):
             colordict[i] = idx
         plddt_bands = self.cmap[:len(thresh)]
+        multi_offset = 0 
         for i,line in enumerate(self.pdb.split("\n")):
             split = line.split()
-            if len(split) == 0 or split[0] != "ATOM":
+            if len(split) == 0: 
                 continue
-            idx = int(split[5])-1
+            elif split[0] != "ATOM":
+                if split[0] == "TER":
+                    multi_offset += int(split[4])
+                continue
+            idx = int(split[5])-1 + multi_offset
             cdx = colordict[self.obs.loc[idx,key]]
             view.setStyle({'model': -1, 'serial': i+1}, {style: {'color': self.cmap[cdx]}})
-
+        
         view.zoomTo()
         grid = GridspecLayout(1, 2)
         out = Output()
