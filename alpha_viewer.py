@@ -1,3 +1,9 @@
+#
+# created by Severin Dicks
+#
+#
+
+
 import pickle
 import py3Dmol
 import matplotlib.pyplot as plt
