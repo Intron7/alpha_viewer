@@ -33,10 +33,22 @@ aa_dict = {0:["Alanine","Ala","A"],
            18:["Tyrosine","Tyr","Y"],
            19:["Valine","Val","V"]}
 
-def translate_numbers_to_one_letter(sequence):
+cmap = ['#1f77b4', '#ff7f0e', '#279e68', '#d62728', '#aa40fc', '#8c564b', '#e377c2', '#b5bd61', '#17becf', '#aec7e8',
+        '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d2', '#dbdb8d', '#9edae5', '#ad494a', '#8c6d31']
+
+styles = ["cartoon","stick","sphere"]
+
+
+def _translate_numbers_to_one_letter(sequence):
+    """
+    Translates numeric aa code to singleletter aa 
+    """
     return [aa_dict[x][2] for x in sequence]
               
-def plot_plddt_legend(thresh, colors, title = None):
+def _plot_plddt_legend(thresh, colors, title = None):
+    """
+    Creates Anotation for py3DMOL plots
+    """
     plt.figure(figsize=(2, 2))
     for c in colors:
         plt.bar(0, 0, color=c)
@@ -53,22 +65,37 @@ def plot_plddt_legend(thresh, colors, title = None):
     return plt
 
 class alpha_viewer:
-    def __init__(self,folder) -> None:
-        self.path = folder
-        self.get_best_model()
-        self.get_meta_data()
-        self.get_pdb()
-        self.get_feature_data()
-        self.figures = False
-        self.cmap = ['#1f77b4', '#ff7f0e', '#279e68', '#d62728', '#aa40fc', '#8c564b', '#e377c2', '#b5bd61', '#17becf', '#aec7e8',
-        '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#c49c94', '#f7b6d2', '#dbdb8d', '#9edae5', '#ad494a', '#8c6d31']
+    """
+    alpha_viewer creates 3D views of Alphafold Predictions. Its losely based on the alphafold colab notebooks visualistation.
+    It automatically chooses the best model of `ranking_debug.json`.
+    Contains `.obs` a pandas dataframe for easy custom annotations and visualisation.
+        
+    Parameters
+    ----------
+    path
+        path to alphafold output folder
+        
+    """
+    def __init__(self,path):
+        self.path = path
+        self._get_best_model()
+        self._get_meta_data()
+        self._get_pdb()
+        self._get_feature_data()
+        self._figures = False
 
-    def create_figure_folder(self)-> None:
-        if self.figures == False:
+    def _create_figure_folder(self)-> None:
+        """
+        checks for existing figure folder within alphafold folder
+        """
+        if self._figures == False:
             os.makedirs(f"{self.path}/figures", exist_ok=True)
-            self.figures = True
+            self._figures = True
 
-    def get_best_model(self)->None:
+    def _get_best_model(self)->None:
+        """
+        checks for best alphafold model
+        """
         with open(f'{self.path}/ranking_debug.json', 'r') as j:
             ranking_data = json.load(j)
         self.best_model = ranking_data['order'][0]
@@ -77,12 +104,18 @@ class alpha_viewer:
         else:
               self.type = "monomer"
                 
-    def get_meta_data(self):
+    def _get_meta_data(self):
+        """
+        loads `features.pkl` file
+        """
         with open(f'{self.path}/result_{self.best_model}.pkl', 'rb') as f:
             self.meta_data = pickle.load(f)
             print(f"using model: {self.best_model} with pLDDT {self.meta_data['ranking_confidence']}")
 
-    def get_feature_data(self):
+    def _get_feature_data(self):
+        """
+        loads best `result_model_*.pkl` file
+        """
         with open(f'{self.path}/features.pkl', 'rb') as f:
             self.feature_data = pickle.load(f)
         if self.type == "monomer":    
@@ -90,21 +123,33 @@ class alpha_viewer:
             self.obs = pd.DataFrame({"aa":[x for x in seq]})
         else:
             seq = self.feature_data["aatype"]
-            self.obs = pd.DataFrame({"aa":translate_numbers_to_one_letter(seq),
+            self.obs = pd.DataFrame({"aa":_translate_numbers_to_one_letter(seq),
                                      "chain": self.feature_data["asym_id"].astype(int),
                                      "chain_postion":self.feature_data["residue_index"].astype(int)})
             
-    def get_pdb(self):
+    def _get_pdb(self):
+        """
+        loads best relaxed `.pdb` file
+        """
         with open(f"{self.path}/relaxed_{self.best_model}.pdb") as ifile:
             self.pdb = "".join([x for x in ifile])
 
 
     def plot_pae(self, save = False):
+        """
+        Plots Predicted Aligned Error (PAE)
+        
+        Parameters
+        ----------
+        save: bool (default: False)
+            if you want to save PAE plot in alphafold_prediction_folder/figures
+            
+        """
         if "predicted_aligned_error" in self.meta_data.keys():
             plt.imshow(self.meta_data["predicted_aligned_error"], vmin=0., vmax=self.meta_data["max_predicted_aligned_error"], cmap='Greens_r')
             plt.colorbar(fraction=0.046, pad=0.04)
             if save:
-                self.create_figure_folder()
+                self._create_figure_folder()
                 plt.savefig(f'{self.path}/figures/pae_{self.best_model}.png',dpi = 600)
             plt.show()
             plt.close()
@@ -112,6 +157,15 @@ class alpha_viewer:
             print(f"Please check your used Alphafold Model. You might want to run `monomer_ptm`")
 
     def plot_pLDDT(self, save = False):
+        """
+        Plots per-residue confidence measure (pLDDT) for each aa
+        
+        Parameters
+        ----------
+        save: bool (default: False)
+            if you want to save pLDDT plot in alphafold_prediction_folder/figures
+            
+        """
         y = self.meta_data["plddt"]
         x = np.arange(len(y))
         plt.plot(x, y)
@@ -120,15 +174,30 @@ class alpha_viewer:
         plt.ylabel("pLDDT")
         plt.ylim(0,100)
         if save:
-            self.create_figure_folder()
+            self._create_figure_folder()
             plt.savefig(f'{self.path}/figures/pLDDT_{self.best_model}.png',dpi = 600)
         plt.show()
         plt.close()
 
     def show_confidence(self, style= "cartoon", show_sidechains = False):
+        """
+        Creates a py3Dmol view in the style of the alphafold colab-notebook colored by pLDDT
+        
+        Parameters
+        ----------
+        style: str (default:'cartoon')
+            The style to display the py3Dmol view in
+        
+        show_sidechains: bool (default: False)
+            Weather or not to use stick style in addition to cartoon style.
+            Will be ignored if style is not `cartoon`
+            
+        """
         view = py3Dmol.view(width=800, height=800)
         view.addModelsAsFrames(self.pdb)
         plddt_bands = ['#FF7D45','#FFDB13','#65CBF3','#0053D6']
+        if style not in styles:
+            raise TypeError("style must be `cartoon`, `stick` or `sphere`")
         for i,line in enumerate(self.pdb.split("\n")):
             split = line.split()
             if len(split) == 0 or split[0] != "ATOM":
@@ -160,20 +229,36 @@ class alpha_viewer:
                 'Low (70 > pLDDT > 50)',
                 'Confident (90 > pLDDT > 70)',
                 'Very high (pLDDT > 90)']
-            plot_plddt_legend(thresh,plddt_bands,'Model Confidence').show()
+            _plot_plddt_legend(thresh,plddt_bands,'Model Confidence').show()
         grid[0, 1] = out
         display.display(grid)
-        self.view = view
+
 
     def show_annotation(self, style= "cartoon", key = "aa"):
+        """
+        Creates a py3Dmol view colored by a custom annotaion column in `.obs`
+        In multimere model use `key = 'chain'` to color each protein chain separately.
+        
+        Parameters
+        ----------
+        style: str (default:'catroon')
+            The style to display the py3Dmol view in
+        
+        key: str (defaut: aa)
+            The column key in `.obs` to use for coloring.
+            By default it colors based on aa type.
+            
+        """
         view = py3Dmol.view(width=800, height=800)
         view.addModelsAsFrames(self.pdb)
+        if style not in styles:
+            raise TypeError("style must be `cartoon`, `stick` or `sphere`")
         self.obs[key] = self.obs[key].astype("category")
         thresh = self.obs[key].cat.categories.to_list()
         colordict = {}
         for idx, i in enumerate(thresh):
             colordict[i] = idx
-        plddt_bands = self.cmap[:len(thresh)]
+        plddt_bands = cmap[:len(thresh)]
         multi_offset = 0 
         for i,line in enumerate(self.pdb.split("\n")):
             split = line.split()
@@ -185,7 +270,7 @@ class alpha_viewer:
                 continue
             idx = int(split[5])-1 + multi_offset
             cdx = colordict[self.obs.loc[idx,key]]
-            view.setStyle({'model': -1, 'serial': i+1}, {style: {'color': self.cmap[cdx]}})
+            view.setStyle({'model': -1, 'serial': i+1}, {style: {'color': cmap[cdx]}})
         
         view.zoomTo()
         grid = GridspecLayout(1, 2)
@@ -196,48 +281,9 @@ class alpha_viewer:
 
         out = Output()
         with out:
-            plot_plddt_legend(thresh,plddt_bands, title=key).show()
+            _plot_plddt_legend(thresh,plddt_bands, title=key).show()
         grid[0, 1] = out
         display.display(grid)
 
 
-    def show_glycosylation(self, style= "cartoon"):
-        try:
-            with open(f"{self.path}/glyc.txt") as glyc_raw:
-                glyc_raw = glyc_raw.read().splitlines()
-                glyc_raw = [x.split()[0] for x in glyc_raw]
-                glyc_raw = "".join(glyc_raw)
-                glyc_raw.replace(" ","")
-                glyc_sites = glyc_raw
-            view = py3Dmol.view(width=800, height=800)
-            view.addModelsAsFrames(self.pdb)
-            plddt_bands = ['red','white']
-            for i,line in enumerate(self.pdb.split("\n")):
-                split = line.split()
-                if len(split) == 0 or split[0] != "ATOM":
-                    continue
-                idx = int(split[5])
-                if glyc_sites[idx-1] == "N":
-                    color = plddt_bands[0]
-                else:
-                    color = plddt_bands[1]
-                view.setStyle({'model': -1, 'serial': i+1}, {style: {'color': color}})
-
-            view.zoomTo()
-            grid = GridspecLayout(1, 2)
-            out = Output()
-            with out:
-                view.show()
-            grid[0, 0] = out
-
-            out = Output()
-            with out:
-                thresh = ['Possible Glycosylation',
-                    'No Glycosylation']
-                plot_plddt_legend(thresh,plddt_bands).show()
-            grid[0, 1] = out
-            display.display(grid)
-        except IOError:
-            print("Error: File does not appear to exist. Please create a `glyc.txt` in the alphafold output folder.")
-
-
+   
