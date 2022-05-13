@@ -16,4 +16,4 @@ you can simply install this repository from github with:
 `pip install git+https://github.com/Intron7/alpha_viewer.git`
 
 
-It's recommended to use alpha_viewer within jupyterlab. Please enable jupyterlab extensions and install`jupyter-widgets/jupyterlab-manager` and `jupyterlab_3dmol`
+It's recommended to use alpha_viewer within jupyterlab. Please enable jupyterlab extensions and install `jupyter-widgets/jupyterlab-manager` and `jupyterlab_3dmol`
