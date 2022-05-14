@@ -9,10 +9,11 @@ So far it's sadly not possible to save the py3Dmol view for exporting.
 If you use alpha_viewer in your publication please cite: <a href="https://zenodo.org/badge/latestdoi/475046878"><img src="https://zenodo.org/badge/475046878.svg" alt="DOI"></a>
 
 
+
 -------
 ### Install
 
-you can simply install this repository from github with:
+you can simply install this repository from github with:\
 `pip install git+https://github.com/Intron7/alpha_viewer.git`
 
 
