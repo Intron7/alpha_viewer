@@ -6,15 +6,18 @@ alpha_viewer is based on the alphafold2 colab notebook visualization. It automat
 alpha-viewer has been tested to work with `monomer`, `monomer_ptm` and `multimer` models.
 So far it's sadly not possible to save the py3Dmol view for exporting.
 
-If you use alpha_viewer in your publication please cite: <a href="https://zenodo.org/badge/latestdoi/475046878"><img src="https://zenodo.org/badge/475046878.svg" alt="DOI"></a>
+If you use alpha_viewer in your publication please cite: <a href="https://doi.org/10.5281/zenodo.6548465"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6548465.svg" alt="DOI"></a>
 
 
 
 -------
 ### Install
 
-you can simply install this repository from github with:\
-`pip install git+https://github.com/Intron7/alpha_viewer.git`
+you can install this repository from pypi with:\
+`pip install alpha-viewer`
 
 
 It's recommended to use alpha_viewer within jupyterlab. Please enable jupyterlab extensions and install `jupyter-widgets/jupyterlab-manager` and `jupyterlab_3dmol`
+
+
+A tutorial notebook can be found in `https://github.com/Intron7/alpha_viewer/tree/main/tutorials`
