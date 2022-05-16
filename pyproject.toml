@@ -22,7 +22,11 @@ dependencies = [
     "matplotlib>=3.5.0",   
 ]
 #dynamic = ["version"]
+<<<<<<< HEAD
 version = "0.1.0"
+=======
+version = "0.0.3"
+>>>>>>> 4740e502a2973761a6377388289b060143eeea58
 #packages = ["alpha_viewer"]
 
 [project.urls]

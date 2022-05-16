@@ -7,7 +7,10 @@ alpha-viewer has been tested to work with `monomer`, `monomer_ptm` and `multimer
 So far it's sadly not possible to save the py3Dmol view for exporting.
 
 If you use alpha_viewer in your publication please cite: <a href="https://doi.org/10.5281/zenodo.6548465"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6548465.svg" alt="DOI"></a>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4740e502a2973761a6377388289b060143eeea58
 
 
 -------
