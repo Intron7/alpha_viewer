@@ -1,8 +1,32 @@
 [build-system]
-requires = ["setuptools>=42",
-"numpy>=1.9.0",
-"pandas>=1.3.0",
-"py3Dmol>=1.8.0",
-"ipywidgets>=7.5.0",
-"matplotlib>=3.5.0"]
-build-backend = "setuptools.build_meta"
+build-backend = "flit_core.buildapi"
+requires = [
+    "flit_core >=3.4,<4",
+    "setuptools_scm",
+    "importlib_metadata>=0.7; python_version < '3.8'",
+]
+
+[project]
+name = "alpha_viewer"
+description = "Alphafold Protein model viewer"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+authors = [{name = "Severin Dicks"}]
+readme = {file = "README.md", content-type="text/markdown"}
+
+dependencies = [
+    "numpy>=1.9.0",
+    "pandas>=1.3.0",
+    "py3Dmol>=1.8.0",
+    "ipywidgets>=7.5.0",
+    "matplotlib>=3.5.0",   
+]
+#dynamic = ["version"]
+version = "0.0.3"
+#packages = ["alpha_viewer"]
+
+[project.urls]
+Source = "https://github.com/Intron7/alpha_viewer"
+
+[tool.coverage.run]
+source = ["alpha_viewer"]
