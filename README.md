@@ -6,7 +6,7 @@ alpha_viewer is based on the alphafold2 colab notebook visualization. It automat
 alpha-viewer has been tested to work with `monomer`, `monomer_ptm` and `multimer` models.
 So far it's sadly not possible to save the py3Dmol view for exporting.
 
-If you use alpha_viewer in your publication please cite: <a href="https://zenodo.org/badge/latestdoi/6548465"><img src="https://zenodo.org/badge/6548465.svg" alt="DOI"></a>
+If you use alpha_viewer in your publication please cite: <a href="https://doi.org/10.5281/zenodo.6548465"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6548465.svg" alt="DOI"></a>
 
 
 -------
