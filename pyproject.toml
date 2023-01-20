@@ -21,10 +21,7 @@ dependencies = [
     "ipywidgets>=7.5.0",
     "matplotlib>=3.5.0",   
 ]
-#dynamic = ["version"]
 version = "0.1.5"
-
-#packages = ["alpha_viewer"]
 
 [project.urls]
 Source = "https://github.com/Intron7/alpha_viewer"
