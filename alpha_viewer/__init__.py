@@ -178,19 +178,34 @@ class alpha_viewer:
             with open(f"{self.path}/unrelaxed_{self.best_model}.pdb") as ifile:
                 self.pdb = "".join([x for x in ifile])
 
-    def plot_pae(self, save = False):
+    def plot_pae(self,color="r", save = False):
         """
         Plots Predicted Aligned Error (PAE)
         
         Parameters
         ----------
+        color:str (default:"r")
+            color to show multimer protein boundaries. Has no effect on monomer proteins.
         save: bool (default: False)
             if you want to save PAE plot in alphafold_prediction_folder/figures
             
         """
         if "predicted_aligned_error" in self.meta_data.keys():
             plt.imshow(self.meta_data["predicted_aligned_error"], vmin=0., vmax=self.meta_data["max_predicted_aligned_error"], cmap='Greens_r')
+            if self.type=="multimer":
+                counter = 0
+                sizes = self.obs.groupby("chain").size()
+                for idx,length in enumerate(sizes):
+                    if idx+1<len(sizes):
+                        plt.hlines(length+counter-1,xmin=0,xmax= self.obs.shape[0],
+                        color=color, linestyle='dashed')
+                        plt.vlines(length+counter-1,ymin=0,ymax= self.obs.shape[0],
+                        color= color, linestyle='dashed')
+                        counter+=length
             plt.colorbar(fraction=0.046, pad=0.04)
+            plt.ylim(0,self.obs.shape[0]-1)
+            plt.xlim(0,self.obs.shape[0]-1)
+
             if save:
                 self._create_figure_folder()
                 plt.savefig(f'{self.path}/figures/pae_{self.best_model}.png',dpi = 600)
@@ -199,23 +214,42 @@ class alpha_viewer:
         else:
             print(f"Please check your used Alphafold Model. You might want to run `monomer_ptm`")
 
-    def plot_pLDDT(self, color= False, save = False):
+    def plot_pLDDT(self, add_pLDDT_background= False, save = False):
         """
         Plots per-residue confidence measure (pLDDT) for each aa
         
         Parameters
         ----------
+        add_pLDDT_background: bool (default: False)
+            adds a colored background based on pLDDT
         save: bool (default: False)
             if you want to save pLDDT plot in alphafold_prediction_folder/figures
             
         """
         y = self.meta_data["plddt"]
         x = np.arange(len(y))
-        plt.plot(x, y)
+        if add_pLDDT_background:
+            plt.plot(x,y,c="black")
+            plt.axhspan(0, 50, facecolor='#ff7d45')
+            plt.axhspan(50, 70, facecolor='#ffdb13')
+            plt.axhspan(70, 90, facecolor='#65cbf3')
+            plt.axhspan(90, 100, facecolor='#0053d6')
+        else:
+            plt.plot(x,y)
+        if self.type=="multimer":
+            counter = 0
+            sizes = self.obs.groupby("chain").size()
+            for idx,length in enumerate(sizes):
+                if idx+1<len(sizes):
+
+                    plt.vlines(length+counter-1,ymin=0,ymax= 100,
+                    color= "k", linestyle='dashed')
+                    counter+=length
         plt.title("Predicted LDDT")
         plt.xlabel("Residue") 
         plt.ylabel("pLDDT")
         plt.ylim(0,100)
+        plt.xlim(0,len(y))
         if save:
             self._create_figure_folder()
             plt.savefig(f'{self.path}/figures/pLDDT_{self.best_model}.png',dpi = 600)
@@ -276,7 +310,7 @@ class alpha_viewer:
         display.display(grid)
 
 
-    def show_annotation(self, style= "cartoon", annotaion_key = "aa"):
+    def show_annotation(self, style= "cartoon", annotation_key = "aa"):
         """
         Creates a py3Dmol view colored by a custom annotaion column in `.obs`
         In multimere model use `key = 'chain'` to color each protein chain separately.
@@ -286,20 +320,20 @@ class alpha_viewer:
         style: str (default:'catroon')
             The style to display the py3Dmol view in
         
-        annotaion_key: str (defaut: aa)
+        annotation_key: str (defaut: aa)
             The column key in `.obs` to use for coloring.
             By default it colors based on aa type.
             
         """
-        if annotaion_key == "pLDDT":
+        if annotation_key == "pLDDT":
             self.show_confidence(style=style)
         else:
             view = py3Dmol.view(width=800, height=800)
             view.addModelsAsFrames(self.pdb)
             if style not in styles:
                 raise TypeError("style must be `cartoon`, `stick` or `sphere`")
-            self.obs[annotaion_key] = self.obs[annotaion_key].astype("category")
-            thresh = self.obs[annotaion_key].cat.categories.to_list()
+            self.obs[annotation_key] = self.obs[annotation_key].astype("category")
+            thresh = self.obs[annotation_key].cat.categories.to_list()
             colordict = {}
             for idx, i in enumerate(thresh):
                 colordict[i] = idx
@@ -314,7 +348,7 @@ class alpha_viewer:
                         multi_offset += int(split[4])
                     continue
                 idx = int(split[5])-1 + multi_offset
-                cdx = colordict[self.obs.loc[idx,annotaion_key]]
+                cdx = colordict[self.obs.loc[idx,annotation_key]]
                 view.setStyle({'model': -1, 'serial': i+1}, {style: {'color': cmap[cdx]}})
             
             view.zoomTo()
@@ -326,14 +360,14 @@ class alpha_viewer:
 
             out = Output()
             with out:
-                _plot_plddt_legend(thresh,plddt_bands, title=annotaion_key).show()
+                _plot_plddt_legend(thresh,plddt_bands, title=annotation_key).show()
             grid[0, 1] = out
             display.display(grid)
 
     def show_substructure(self,
                         split_key: str,
                         use_cat: Union[str, list],
-                        annotaion_key: str= "pLDDT",
+                        annotation_key: str= "pLDDT",
                         style = "cartoon"):
         """
         Creates a py3Dmol view colored by a custom annotaion column in `.obs`
@@ -349,7 +383,7 @@ class alpha_viewer:
             String or List of substructure(s) to view.
             This can even be a single
 
-        annotaion_key:
+        annotation_key:
             The column key in `.obs` to use for coloring.
             By default it colors based on pLDDT.
 
@@ -387,7 +421,7 @@ class alpha_viewer:
         view.addModelsAsFrames(indexed_subset_pdb)
         if style not in styles:
             raise TypeError("style must be `cartoon`, `stick` or `sphere`")
-        if annotaion_key == "pLDDT":
+        if annotation_key == "pLDDT":
             plddt_bands = ['#FF7D45','#FFDB13','#65CBF3','#0053D6']
             for i,line in enumerate(indexed_subset_pdb.split("\n")):
                 split = line.split()
@@ -419,8 +453,8 @@ class alpha_viewer:
             grid[0, 1] = out
             display.display(grid)
         else:
-            subset_obs[annotaion_key] = subset_obs[annotaion_key].astype("category")
-            thresh = subset_obs[annotaion_key].cat.categories.to_list()
+            subset_obs[annotation_key] = subset_obs[annotation_key].astype("category")
+            thresh = subset_obs[annotation_key].cat.categories.to_list()
             colordict = {}
             for idx, i in enumerate(thresh):
                 colordict[i] = idx
@@ -432,7 +466,7 @@ class alpha_viewer:
                 elif split[0] != "ATOM":
                     continue
                 idx_c = split[4]+split[5]
-                cdx = colordict[subset_obs.loc[subset_obs["idx"]==idx_c,annotaion_key].values[0]]
+                cdx = colordict[subset_obs.loc[subset_obs["idx"]==idx_c,annotation_key].values[0]]
                 view.setStyle({'model': -1, 'serial': i+1}, {style: {'color': cmap[cdx]}})
             
             view.zoomTo()
@@ -444,6 +478,6 @@ class alpha_viewer:
 
             out = Output()
             with out:
-                _plot_plddt_legend(thresh,plddt_bands, title=annotaion_key).show()
+                _plot_plddt_legend(thresh,plddt_bands, title=annotation_key).show()
             grid[0, 1] = out
             display.display(grid)
